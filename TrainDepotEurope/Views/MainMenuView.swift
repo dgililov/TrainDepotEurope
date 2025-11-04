@@ -3,6 +3,7 @@
 //  TrainDepotEurope
 //
 //  Created on November 4, 2025
+//  Redesigned following Apple HIG standards
 //
 
 import SwiftUI
@@ -10,141 +11,166 @@ import SwiftUI
 struct MainMenuView: View {
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var queueService: QueueService
-    @EnvironmentObject var audioService: AudioService
-    
-    @State private var selectedAnimal: AnimalCharacter = .lion
-    @State private var showAnimalSelection = false
-    @State private var showLobby = false
-    @State private var startGame = false
+    @State private var showingAnimalSelection = false
+    @State private var showingSettings = false
     
     var body: some View {
         NavigationView {
             ZStack {
-                // Gradient background
+                // Background gradient
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.blue, Color.purple]),
+                    gradient: Gradient(colors: [
+                        Color(red: 0.1, green: 0.4, blue: 0.8),
+                        Color(red: 0.2, green: 0.6, blue: 1.0)
+                    ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
                 
-                VStack(spacing: 30) {
-                    Spacer()
-                    
-                    // Welcome message
-                    VStack(spacing: 10) {
-                        Text("Welcome,")
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundColor(.white.opacity(0.9))
+                ScrollView {
+                    VStack(spacing: 32) {
+                        // Header section
+                        VStack(spacing: 16) {
+                            Image(systemName: "train.side.front.car")
+                                .font(.system(size: 60, weight: .light))
+                                .foregroundStyle(.white)
+                            
+                            if let user = authService.currentUser {
+                                Text("Welcome, \(user.username)!")
+                                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
+                        .padding(.top, 40)
                         
-                        Text(authService.currentUser?.username ?? "Player")
-                            .font(.system(size: 32, weight: .bold))
+                        // Menu cards
+                        VStack(spacing: 16) {
+                            // Join Game
+                            NavigationLink(destination: AnimalSelectionView()) {
+                                MenuCard(
+                                    icon: "person.2.fill",
+                                    title: "Join Game",
+                                    subtitle: "Play with others",
+                                    color: Color.green
+                                )
+                            }
+                            
+                            // Solo Play
+                            NavigationLink(destination: AnimalSelectionView()) {
+                                MenuCard(
+                                    icon: "person.fill",
+                                    title: "Solo Play",
+                                    subtitle: "Play against CPU",
+                                    color: Color.orange
+                                )
+                            }
+                            
+                            // Stats & Achievements (placeholder)
+                            Button(action: {
+                                // Future feature
+                            }) {
+                                MenuCard(
+                                    icon: "chart.bar.fill",
+                                    title: "Statistics",
+                                    subtitle: "View your progress",
+                                    color: Color.purple
+                                )
+                            }
+                            .disabled(true)
+                            .opacity(0.6)
+                            
+                            // How to Play
+                            Button(action: {
+                                // Future feature: show tutorial
+                            }) {
+                                MenuCard(
+                                    icon: "questionmark.circle.fill",
+                                    title: "How to Play",
+                                    subtitle: "Learn the rules",
+                                    color: Color.blue
+                                )
+                            }
+                            .disabled(true)
+                            .opacity(0.6)
+                        }
+                        .padding(.horizontal, 24)
+                        
+                        Spacer(minLength: 40)
+                        
+                        // Sign out button
+                        Button(action: signOut) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                Text("Sign Out")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
                             .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(10)
+                        }
+                        .padding(.bottom, 30)
                     }
-                    
-                    // Selected animal display
-                    VStack(spacing: 10) {
-                        Text(selectedAnimal.emoji)
-                            .font(.system(size: 80))
-                        
-                        Text(selectedAnimal.description)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(Color.white.opacity(0.2))
-                    .cornerRadius(20)
-                    
-                    Spacer()
-                    
-                    // Menu buttons
-                    VStack(spacing: 15) {
-                        Button(action: {
-                            showAnimalSelection = true
-                        }) {
-                            MenuButton(title: "SELECT ANIMAL", icon: "🎭")
-                        }
-                        
-                        Button(action: {
-                            showLobby = true
-                        }) {
-                            MenuButton(title: "VIEW LOBBY", icon: "👥")
-                        }
-                        
-                        Button(action: handleStartGame) {
-                            MenuButton(title: "START GAME", icon: "🎮")
-                        }
-                        
-                        Button(action: handleLogout) {
-                            Text("Logout")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.white.opacity(0.8))
-                        }
-                    }
-                    .padding(.horizontal, 40)
-                    
-                    Spacer()
                 }
-                
-                // Navigation links
-                NavigationLink(destination: LobbyView(), isActive: $showLobby) {
-                    EmptyView()
-                }
-                
-                NavigationLink(destination: GameBoardView(), isActive: $startGame) {
-                    EmptyView()
-                }
-            }
-            .sheet(isPresented: $showAnimalSelection) {
-                AnimalSelectionView(selectedAnimal: $selectedAnimal)
             }
             .navigationBarHidden(true)
         }
-        .onAppear {
-            // Start background music
-            audioService.playBackgroundMusic()
-            
-            // Add player to queue
-            if let user = authService.currentUser {
-                queueService.addPlayer(username: user.username, userId: user.id, selectedAnimal: selectedAnimal)
-            }
-        }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
     
-    private func handleStartGame() {
-        guard queueService.canStartGame() else {
-            return
-        }
-        
-        let players = queueService.getPlayersForGame()
-        GameService.shared.initializeGame(players: players)
-        startGame = true
-    }
-    
-    private func handleLogout() {
+    private func signOut() {
         authService.logout()
+        AudioService.shared.playSound(.buttonTap)
     }
 }
 
-struct MenuButton: View {
-    let title: String
+// Reusable Menu Card Component
+struct MenuCard: View {
     let icon: String
+    let title: String
+    let subtitle: String
+    let color: Color
     
     var body: some View {
-        HStack {
-            Text(icon)
-                .font(.system(size: 24))
+        HStack(spacing: 16) {
+            // Icon circle
+            ZStack {
+                Circle()
+                    .fill(color)
+                    .frame(width: 56, height: 56)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.white)
+            }
             
-            Text(title)
-                .font(.system(size: 18, weight: .bold))
+            // Text content
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Text(subtitle)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
             
             Spacer()
+            
+            // Chevron
+            Image(systemName: "chevron.right")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.secondary)
         }
-        .foregroundColor(.blue)
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color.white)
-        .cornerRadius(10)
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.1), radius: 10, y: 4)
+        )
     }
 }
 
@@ -153,7 +179,5 @@ struct MainMenuView_Previews: PreviewProvider {
         MainMenuView()
             .environmentObject(AuthenticationService.shared)
             .environmentObject(QueueService.shared)
-            .environmentObject(AudioService.shared)
     }
 }
-

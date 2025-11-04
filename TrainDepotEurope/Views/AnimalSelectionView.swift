@@ -3,111 +3,154 @@
 //  TrainDepotEurope
 //
 //  Created on November 4, 2025
+//  Redesigned following Apple HIG standards
 //
 
 import SwiftUI
 
 struct AnimalSelectionView: View {
-    @Binding var selectedAnimal: AnimalCharacter
-    @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var queueService: QueueService
+    @EnvironmentObject var authService: AuthenticationService
+    @State private var selectedAnimal: AnimalCharacter = .bear
+    @State private var navigateToLobby = false
     
-    let columns = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
+    // Grid layout for animals
+    private let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
     ]
     
     var body: some View {
         ZStack {
-            // Gradient background
-            LinearGradient(
-                gradient: Gradient(colors: [Color.blue, Color.purple]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            // Background
+            Color(uiColor: .systemGroupedBackground)
+                .ignoresSafeArea()
             
-            VStack(spacing: 20) {
-                // Preview
-                VStack(spacing: 10) {
-                    Text("Select Your Character")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 8) {
+                    Text("Choose Your Character")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
                     
-                    Text(selectedAnimal.emoji)
-                        .font(.system(size: 80))
-                    
-                    Text(selectedAnimal.description)
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(.white)
+                    Text("Select an animal to represent you")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
-                .padding(.top, 40)
+                .padding(.top, 20)
                 
-                // Grid of animals
+                // Animal grid
                 ScrollView {
-                    LazyVGrid(columns: columns, spacing: 20) {
+                    LazyVGrid(columns: columns, spacing: 16) {
                         ForEach(AnimalCharacter.allCases, id: \.self) { animal in
                             AnimalCard(
                                 animal: animal,
-                                isSelected: animal == selectedAnimal,
-                                onSelect: {
-                                    selectedAnimal = animal
-                                }
+                                isSelected: selectedAnimal == animal
                             )
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedAnimal = animal
+                                    AudioService.shared.playSound(.buttonTap)
+                                }
+                            }
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, 20)
                 }
                 
-                // Done button
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("DONE")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.blue)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.white)
-                        .cornerRadius(10)
+                // Continue button
+                Button(action: joinQueue) {
+                    HStack(spacing: 12) {
+                        Text("Join Game")
+                            .font(.system(size: 18, weight: .semibold))
+                        Image(systemName: "arrow.right.circle.fill")
+                            .font(.system(size: 20))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.accentColor)
+                    .foregroundColor(.white)
+                    .cornerRadius(14)
+                    .shadow(color: Color.accentColor.opacity(0.3), radius: 8, y: 4)
                 }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 20)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
             }
+            
+            // Navigation
+            NavigationLink(
+                destination: LobbyView(),
+                isActive: $navigateToLobby
+            ) {
+                EmptyView()
+            }
+            .hidden()
         }
+        .navigationTitle("Select Character")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    private func joinQueue() {
+        guard let user = authService.currentUser else { return }
+        
+        queueService.addPlayer(
+            username: user.username,
+            userId: user.id,
+            selectedAnimal: selectedAnimal
+        )
+        
+        navigateToLobby = true
+        AudioService.shared.playSound(.buttonTap)
     }
 }
 
+// Animal Card Component
 struct AnimalCard: View {
     let animal: AnimalCharacter
     let isSelected: Bool
-    let onSelect: () -> Void
     
     var body: some View {
-        Button(action: onSelect) {
-            VStack(spacing: 8) {
-                Text(animal.emoji)
-                    .font(.system(size: 50))
-                
-                Text(animal.description)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(isSelected ? Color.yellow.opacity(0.3) : Color.white.opacity(0.2))
-            .cornerRadius(15)
-            .overlay(
-                RoundedRectangle(cornerRadius: 15)
-                    .stroke(isSelected ? Color.yellow : Color.clear, lineWidth: 3)
-            )
+        VStack(spacing: 12) {
+            // Animal emoji
+            Text(animal.emoji)
+                .font(.system(size: 60))
+                .scaleEffect(isSelected ? 1.1 : 1.0)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
+            
+            // Animal name
+            Text(animal.rawValue.capitalized)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.primary)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(isSelected ? animal.color.opacity(0.2) : Color(.secondarySystemGroupedBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(
+                            isSelected ? animal.color : Color.clear,
+                            lineWidth: 3
+                        )
+                )
+                .shadow(
+                    color: isSelected ? animal.color.opacity(0.3) : Color.black.opacity(0.05),
+                    radius: isSelected ? 10 : 5,
+                    y: isSelected ? 4 : 2
+                )
+        )
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
 struct AnimalSelectionView_Previews: PreviewProvider {
     static var previews: some View {
-        AnimalSelectionView(selectedAnimal: .constant(.lion))
+        NavigationView {
+            AnimalSelectionView()
+                .environmentObject(QueueService.shared)
+                .environmentObject(AuthenticationService.shared)
+        }
     }
 }
-

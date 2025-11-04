@@ -9,12 +9,30 @@ import Foundation
 import AVFoundation
 import Combine
 
-enum SoundEffect: String {
-    case cardDraw = "card_draw"
-    case railroadBuild = "railroad_build"
-    case missionComplete = "mission_complete"
-    case turnChange = "turn_change"
-    case welcome = "welcome"
+enum SoundEffect {
+    case cardDraw
+    case railroadBuild
+    case missionComplete
+    case turnChange
+    case welcome
+    case buttonTap  // Maps to cardDraw
+    case gameStart  // Maps to welcome
+    case victory  // Maps to missionComplete
+    
+    var fileName: String {
+        switch self {
+        case .cardDraw, .buttonTap:
+            return "card_draw"
+        case .railroadBuild:
+            return "railroad_build"
+        case .missionComplete, .victory:
+            return "mission_complete"
+        case .turnChange:
+            return "turn_change"
+        case .welcome, .gameStart:
+            return "welcome"
+        }
+    }
 }
 
 class AudioService: ObservableObject {
@@ -69,8 +87,8 @@ class AudioService: ObservableObject {
             player.play()
         } else {
             // Try to load and play
-            guard let url = Bundle.main.url(forResource: effect.rawValue, withExtension: "mp3") else {
-                print("Sound effect \(effect.rawValue) not found")
+            guard let url = Bundle.main.url(forResource: effect.fileName, withExtension: "mp3") else {
+                print("Sound effect \(effect.fileName) not found")
                 return
             }
             
@@ -80,7 +98,7 @@ class AudioService: ObservableObject {
                 player.play()
                 soundEffectPlayers[effect] = player
             } catch {
-                print("Failed to play sound effect \(effect.rawValue): \(error)")
+                print("Failed to play sound effect \(effect.fileName): \(error)")
             }
         }
     }
@@ -112,7 +130,7 @@ class AudioService: ObservableObject {
     private func loadSoundEffects() {
         // Preload all sound effects
         for effect in [SoundEffect.cardDraw, .railroadBuild, .missionComplete, .turnChange, .welcome] {
-            guard let url = Bundle.main.url(forResource: effect.rawValue, withExtension: "mp3") else {
+            guard let url = Bundle.main.url(forResource: effect.fileName, withExtension: "mp3") else {
                 continue
             }
             
@@ -121,7 +139,7 @@ class AudioService: ObservableObject {
                 player.prepareToPlay()
                 soundEffectPlayers[effect] = player
             } catch {
-                print("Failed to load sound effect \(effect.rawValue): \(error)")
+                print("Failed to load sound effect \(effect.fileName): \(error)")
             }
         }
     }
