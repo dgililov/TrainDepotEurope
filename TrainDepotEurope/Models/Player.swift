@@ -15,6 +15,7 @@ struct Player: Identifiable, Codable, Equatable {
     var completedMissions: Int
     var score: Int
     var isActive: Bool
+    var hasUsedTurnAction: Bool  // Track if player has taken action this turn
     let isCPU: Bool
     let selectedAnimal: AnimalCharacter
     
@@ -25,6 +26,7 @@ struct Player: Identifiable, Codable, Equatable {
          completedMissions: Int = 0,
          score: Int = 0,
          isActive: Bool = false,
+         hasUsedTurnAction: Bool = false,
          isCPU: Bool = false,
          selectedAnimal: AnimalCharacter) {
         self.id = id
@@ -34,6 +36,7 @@ struct Player: Identifiable, Codable, Equatable {
         self.completedMissions = completedMissions
         self.score = score
         self.isActive = isActive
+        self.hasUsedTurnAction = hasUsedTurnAction
         self.isCPU = isCPU
         self.selectedAnimal = selectedAnimal
     }

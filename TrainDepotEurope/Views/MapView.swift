@@ -12,7 +12,7 @@ struct MapView: View {
     @Binding var selectedCity: City?
     @EnvironmentObject var trainAnimationService: TrainAnimationService
     
-    @State private var scale: CGFloat = 1.0
+    @State private var scale: CGFloat = 1.5  // Start zoomed in
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
     
@@ -35,9 +35,9 @@ struct MapView: View {
                     Color.blue.opacity(0.2)
                 }
                 
-                // Railroad lines
+                // Railroad lines (draw first, behind cities)
                 ForEach(game.railroads) { railroad in
-                    RailroadLine(railroad: railroad, cities: game.cities, geometry: geometry)
+                    RailroadLine(railroad: railroad, cities: game.cities, players: game.players, geometry: geometry)
                 }
                 
                 // City pins
@@ -63,7 +63,7 @@ struct MapView: View {
             .gesture(
                 MagnificationGesture()
                     .onChanged { value in
-                        scale = min(max(value, 0.5), 3.0)
+                        scale = min(max(value * 1.5, 0.8), 4.0)  // Allow 0.8x to 4x zoom
                     }
             )
             .simultaneousGesture(
@@ -102,20 +102,29 @@ struct CityPin: View {
     
     var body: some View {
         VStack(spacing: 2) {
-            Circle()
-                .fill(isSelected ? Color.yellow : Color.red)
-                .frame(width: 12, height: 12)
-                .overlay(
-                    Circle()
-                        .stroke(Color.white, lineWidth: 2)
-                )
+            // City icon
+            ZStack {
+                Circle()
+                    .fill(isSelected ? Color.yellow : Color.white)
+                    .frame(width: 20, height: 20)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black, lineWidth: 2)
+                    )
+                
+                Text("🏛")
+                    .font(.system(size: 12))
+            }
             
+            // City name label
             Text(city.name)
-                .font(.system(size: 10, weight: .bold))
+                .font(.system(size: 11, weight: .bold))
                 .foregroundColor(.white)
-                .padding(4)
-                .background(Color.black.opacity(0.7))
-                .cornerRadius(4)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Color.black.opacity(0.75))
+                .cornerRadius(6)
+                .shadow(radius: 2)
         }
         .position(position)
         .onTapGesture {
@@ -127,6 +136,7 @@ struct CityPin: View {
 struct RailroadLine: View {
     let railroad: Railroad
     let cities: [City]
+    let players: [Player]
     let geometry: GeometryProxy
     
     var fromCity: City? {
@@ -135,6 +145,11 @@ struct RailroadLine: View {
     
     var toCity: City? {
         cities.first { $0.id == railroad.toCity }
+    }
+    
+    var owner: Player? {
+        guard let ownerId = railroad.owner else { return nil }
+        return players.first { $0.id == ownerId }
     }
     
     var startPosition: CGPoint {
@@ -163,12 +178,64 @@ struct RailroadLine: View {
         return CGPoint(x: pixel.x * scaleX, y: pixel.y * scaleY)
     }
     
-    var body: some View {
-        Path { path in
-            path.move(to: startPosition)
-            path.addLine(to: endPosition)
+    var lineColor: Color {
+        if let requiredColor = railroad.requiredColor {
+            return requiredColor.color
         }
-        .stroke(railroad.owner != nil ? Color.green : Color.gray.opacity(0.5), lineWidth: 3)
+        return Color.gray
+    }
+    
+    var body: some View {
+        ZStack {
+            // Railroad path
+            Path { path in
+                path.move(to: startPosition)
+                path.addLine(to: endPosition)
+            }
+            .stroke(style: StrokeStyle(
+                lineWidth: railroad.owner != nil ? 5 : 3,
+                lineCap: .round,
+                dash: railroad.owner != nil ? [] : [8, 4]  // Solid if owned, dotted if not
+            ))
+            .foregroundColor(lineColor)
+            .opacity(railroad.owner != nil ? 1.0 : 0.6)
+            
+            // Show owner info on claimed railroads
+            if let owner = owner {
+                Text("\(owner.selectedAnimal.emoji)")
+                    .font(.system(size: 16))
+                    .padding(4)
+                    .background(owner.selectedAnimal.color.opacity(0.8))
+                    .cornerRadius(8)
+                    .position(
+                        x: (startPosition.x + endPosition.x) / 2,
+                        y: (startPosition.y + endPosition.y) / 2
+                    )
+            }
+            
+            // Show distance/slots requirement
+            if railroad.owner == nil {
+                VStack(spacing: 0) {
+                    Text("\(railroad.distance)")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    if let color = railroad.requiredColor {
+                        Circle()
+                            .fill(color.color)
+                            .frame(width: 12, height: 12)
+                            .overlay(Circle().stroke(Color.white, lineWidth: 1))
+                    }
+                }
+                .padding(6)
+                .background(Color.black.opacity(0.7))
+                .cornerRadius(8)
+                .position(
+                    x: (startPosition.x + endPosition.x) / 2,
+                    y: (startPosition.y + endPosition.y) / 2
+                )
+            }
+        }
     }
 }
 
@@ -186,4 +253,3 @@ struct MapView_Previews: PreviewProvider {
             .environmentObject(TrainAnimationService.shared)
     }
 }
-

@@ -136,76 +136,87 @@ class MapDataService {
             return cities.first { $0.name == name }?.id
         }
         
-        // Create railroad connections (50+ connections)
-        var connections: [(String, String, Int)] = [
-            // Europe connections
-            ("London", "Paris", 2),
-            ("London", "Amsterdam", 2),
-            ("Paris", "Brussels", 1),
-            ("Paris", "Madrid", 3),
-            ("Berlin", "Amsterdam", 2),
-            ("Berlin", "Warsaw", 2),
-            ("Berlin", "Prague", 1),
-            ("Berlin", "Vienna", 2),
-            ("Rome", "Vienna", 3),
-            ("Rome", "Athens", 3),
-            ("Madrid", "Lisbon", 2),
-            ("Stockholm", "Oslo", 2),
-            ("Stockholm", "Copenhagen", 2),
-            ("Stockholm", "Helsinki", 2),
-            ("Copenhagen", "Berlin", 2),
-            ("Oslo", "Copenhagen", 2),
-            ("Vienna", "Budapest", 1),
-            ("Vienna", "Prague", 1),
-            ("Warsaw", "Prague", 2),
-            ("Warsaw", "Budapest", 2),
-            ("Budapest", "Athens", 3),
-            ("Athens", "Istanbul", 2),
-            ("Moscow", "Warsaw", 3),
-            ("Moscow", "Helsinki", 3),
-            ("Brussels", "Amsterdam", 1),
-            ("Prague", "Budapest", 2),
-            ("Paris", "Rome", 3),
-            ("Dublin", "London", 2),
-            ("Lisbon", "Madrid", 2),
-            ("Rome", "Madrid", 3),
+        // Railroad connections: (from, to, distance, color)
+        // nil color means any color can be used
+        var connections: [(String, String, Int, CardColor?)] = [
+            // Major Europe connections with specific colors
+            ("London", "Paris", 2, .blue),
+            ("London", "Paris", 2, .red), // Dual path
+            ("London", "Amsterdam", 2, .green),
+            ("Paris", "Brussels", 1, .yellow),
+            ("Paris", "Brussels", 1, .red), // Dual path
+            ("Paris", "Madrid", 3, .blue),
+            ("Paris", "Madrid", 3, .green), // Dual path
+            ("Paris", "Rome", 3, .black),
+            ("Berlin", "Amsterdam", 2, .yellow),
+            ("Berlin", "Warsaw", 2, .red),
+            ("Berlin", "Warsaw", 2, .green), // Dual path
+            ("Berlin", "Prague", 1, .black),
+            ("Berlin", "Vienna", 2, .blue),
+            ("Berlin", "Vienna", 2, .yellow), // Dual path
+            ("Rome", "Vienna", 3, .green),
+            ("Rome", "Athens", 3, .red),
+            ("Rome", "Madrid", 3, .yellow),
+            ("Madrid", "Lisbon", 2, .red),
+            ("Stockholm", "Oslo", 2, .green),
+            ("Stockholm", "Copenhagen", 2, .yellow),
+            ("Stockholm", "Copenhagen", 2, .blue), // Dual path
+            ("Stockholm", "Helsinki", 2, .red),
+            ("Copenhagen", "Berlin", 2, .black),
+            ("Oslo", "Copenhagen", 2, .blue),
+            ("Vienna", "Budapest", 1, .red),
+            ("Vienna", "Budapest", 1, .blue), // Dual path
+            ("Vienna", "Prague", 1, .green),
+            ("Warsaw", "Prague", 2, .yellow),
+            ("Warsaw", "Budapest", 2, .black),
+            ("Budapest", "Prague", 2, .blue),
+            ("Budapest", "Athens", 3, .green),
+            ("Athens", "Istanbul", 2, .red),
+            ("Athens", "Istanbul", 2, .yellow), // Dual path
+            ("Moscow", "Warsaw", 3, .black),
+            ("Moscow", "Helsinki", 3, .blue),
+            ("Brussels", "Amsterdam", 1, .black),
+            ("Dublin", "London", 2, .green),
+            ("Lisbon", "Madrid", 2, .yellow),
             
-            // West Asia connections
-            ("Istanbul", "Ankara", 2),
-            ("Ankara", "Tbilisi", 3),
-            ("Ankara", "Damascus", 3),
-            ("Tehran", "Baku", 3),
-            ("Tehran", "Baghdad", 2),
-            ("Baghdad", "Damascus", 2),
-            ("Damascus", "Beirut", 1),
-            ("Damascus", "Jerusalem", 1),
-            ("Damascus", "Amman", 1),
-            ("Beirut", "Jerusalem", 1),
-            ("Jerusalem", "Amman", 1),
-            ("Amman", "Riyadh", 4),
-            ("Baghdad", "Kuwait City", 2),
-            ("Kuwait City", "Riyadh", 2),
-            ("Riyadh", "Doha", 2),
-            ("Doha", "Abu Dhabi", 2),
-            ("Abu Dhabi", "Muscat", 2),
-            ("Riyadh", "Sana'a", 3),
-            ("Baku", "Tbilisi", 2),
-            ("Tbilisi", "Yerevan", 1),
-            ("Yerevan", "Tehran", 3),
+            // West Asia connections with colors
+            ("Istanbul", "Ankara", 2, .blue),
+            ("Istanbul", "Ankara", 2, .green), // Dual path
+            ("Ankara", "Tbilisi", 3, .red),
+            ("Ankara", "Damascus", 3, .yellow),
+            ("Tehran", "Baku", 3, .black),
+            ("Tehran", "Baghdad", 2, .green),
+            ("Tehran", "Baghdad", 2, .blue), // Dual path
+            ("Baghdad", "Damascus", 2, .red),
+            ("Damascus", "Beirut", 1, .yellow),
+            ("Damascus", "Jerusalem", 1, .green),
+            ("Damascus", "Amman", 1, .blue),
+            ("Beirut", "Jerusalem", 1, .black),
+            ("Jerusalem", "Amman", 1, .red),
+            ("Amman", "Riyadh", 4, .yellow),
+            ("Baghdad", "Kuwait City", 2, .black),
+            ("Kuwait City", "Riyadh", 2, .green),
+            ("Riyadh", "Doha", 2, .blue),
+            ("Doha", "Abu Dhabi", 2, .red),
+            ("Abu Dhabi", "Muscat", 2, .yellow),
+            ("Riyadh", "Sana'a", 3, .black),
+            ("Baku", "Tbilisi", 2, .green),
+            ("Tbilisi", "Yerevan", 1, .blue),
+            ("Yerevan", "Tehran", 3, .red),
             
-            // Cross-regional connections
-            ("Moscow", "Ankara", 4),
-            ("Athens", "Ankara", 3),
-            ("Istanbul", "Athens", 2)
+            // Cross-regional long connections
+            ("Moscow", "Ankara", 4, .black),
+            ("Athens", "Ankara", 3, .yellow),
+            ("Athens", "Ankara", 3, .blue) // Dual path
         ]
         
-        for (from, to, distance) in connections {
+        for (from, to, distance, color) in connections {
             if let fromId = cityId(from), let toId = cityId(to) {
                 let railroad = Railroad(
                     fromCity: fromId,
                     toCity: toId,
                     distance: distance,
-                    requiredColor: nil // Any color allowed
+                    requiredColor: color
                 )
                 railroads.append(railroad)
             }

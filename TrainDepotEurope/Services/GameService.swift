@@ -57,6 +57,12 @@ class GameService: ObservableObject {
         
         var player = game.players[playerIndex]
         
+        // Check if player has already used their action this turn
+        guard !player.hasUsedTurnAction else {
+            errorMessage = "You've already taken an action this turn! End your turn."
+            return
+        }
+        
         // Check hand limit
         guard player.hand.count < 6 else {
             errorMessage = "Hand is full! Maximum 6 cards."
@@ -72,6 +78,7 @@ class GameService: ObservableObject {
         // Draw card
         let card = game.cardDeck.removeFirst()
         player.hand.append(card)
+        player.hasUsedTurnAction = true  // Mark action as used
         
         game.players[playerIndex] = player
         currentGame = game
@@ -120,6 +127,12 @@ class GameService: ObservableObject {
         
         var player = game.players[playerIndex]
         var railroad = game.railroads[railroadIndex]
+        
+        // Check if player has already used their action this turn
+        guard !player.hasUsedTurnAction else {
+            errorMessage = "You've already taken an action this turn! End your turn."
+            return
+        }
         
         // Check if already owned
         if railroad.owner != nil {
@@ -187,6 +200,7 @@ class GameService: ObservableObject {
         // Mark railroad as owned
         railroad.owner = playerId
         railroad.cardsUsed = cardsToUse
+        player.hasUsedTurnAction = true  // Mark action as used
         
         // Update game
         game.players[playerIndex] = player
@@ -211,12 +225,14 @@ class GameService: ObservableObject {
     func endTurn() {
         guard var game = currentGame else { return }
         
-        // Set current player inactive
+        // Set current player inactive and reset their action flag
         game.players[game.currentPlayerIndex].isActive = false
+        game.players[game.currentPlayerIndex].hasUsedTurnAction = false
         
         // Move to next player
         game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.count
         game.players[game.currentPlayerIndex].isActive = true
+        game.players[game.currentPlayerIndex].hasUsedTurnAction = false // Reset for new turn
         
         currentGame = game
         
@@ -333,9 +349,9 @@ class GameService: ObservableObject {
     private func createDeck() -> [Card] {
         var deck: [Card] = []
         
-        // 12 Yellow cards
+        // 12 Red cards
         for _ in 0..<12 {
-            deck.append(Card(color: .yellow))
+            deck.append(Card(color: .red))
         }
         
         // 12 Blue cards
@@ -343,14 +359,19 @@ class GameService: ObservableObject {
             deck.append(Card(color: .blue))
         }
         
+        // 12 Yellow cards
+        for _ in 0..<12 {
+            deck.append(Card(color: .yellow))
+        }
+        
         // 12 Green cards
         for _ in 0..<12 {
             deck.append(Card(color: .green))
         }
         
-        // 12 Red cards
+        // 12 Black cards
         for _ in 0..<12 {
-            deck.append(Card(color: .red))
+            deck.append(Card(color: .black))
         }
         
         // 14 Rainbow (wild) cards
