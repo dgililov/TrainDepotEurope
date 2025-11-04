@@ -12,7 +12,7 @@ struct MapView: View {
     @Binding var selectedCity: City?
     @EnvironmentObject var trainAnimationService: TrainAnimationService
     
-    @State private var scale: CGFloat = 1.5  // Start zoomed in
+    @State private var scale: CGFloat = 3.5  // Start zoomed in for 10mm spacing
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
     
@@ -63,7 +63,7 @@ struct MapView: View {
             .gesture(
                 MagnificationGesture()
                     .onChanged { value in
-                        scale = min(max(value * 1.5, 0.8), 4.0)  // Allow 0.8x to 4x zoom
+                        scale = min(max(value * 3.5, 1.0), 6.0)  // Allow 1.0x to 6x zoom
                     }
             )
             .simultaneousGesture(
@@ -100,31 +100,46 @@ struct CityPin: View {
         return CGPoint(x: pixel.x * scaleX, y: pixel.y * scaleY)
     }
     
+    // Dynamic font sizes based on selection
+    var cityIconSize: CGFloat {
+        isSelected ? 24 : 16
+    }
+    
+    var cityNameFontSize: CGFloat {
+        isSelected ? 18 : 8  // Very small (8pt) when not selected, large (18pt) when selected
+    }
+    
+    var cityCircleSize: CGFloat {
+        isSelected ? 28 : 18
+    }
+    
     var body: some View {
         VStack(spacing: 2) {
             // City icon
             ZStack {
                 Circle()
                     .fill(isSelected ? Color.yellow : Color.white)
-                    .frame(width: 20, height: 20)
+                    .frame(width: cityCircleSize, height: cityCircleSize)
                     .overlay(
                         Circle()
-                            .stroke(Color.black, lineWidth: 2)
+                            .stroke(Color.black, lineWidth: isSelected ? 3 : 2)
                     )
                 
                 Text("🏛")
-                    .font(.system(size: 12))
+                    .font(.system(size: cityIconSize))
             }
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
             
-            // City name label
+            // City name label with dynamic sizing
             Text(city.name)
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: cityNameFontSize, weight: isSelected ? .bold : .medium))
                 .foregroundColor(.white)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Color.black.opacity(0.75))
-                .cornerRadius(6)
-                .shadow(radius: 2)
+                .padding(.horizontal, isSelected ? 8 : 4)
+                .padding(.vertical, isSelected ? 4 : 2)
+                .background(Color.black.opacity(isSelected ? 0.85 : 0.6))
+                .cornerRadius(isSelected ? 8 : 4)
+                .shadow(radius: isSelected ? 3 : 1)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
         }
         .position(position)
         .onTapGesture {

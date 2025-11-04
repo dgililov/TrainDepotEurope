@@ -19,12 +19,27 @@ class GameService: ObservableObject {
     func initializeGame(players: [Player]) {
         let cities = MapDataService.shared.getAllCities()
         let railroads = MapDataService.shared.getAllRailroads()
-        let missions = MapDataService.shared.generateMissions()
+        var missions = MapDataService.shared.generateMissions()
         
-        // Create 62-card deck
+        // Create 74-card deck
         let deck = createDeck()
         
         var gamePlayers = players
+        
+        // Give each player 2 mission cards at start
+        for i in 0..<gamePlayers.count {
+            var player = gamePlayers[i]
+            
+            // Draw 2 missions for each player
+            if missions.count >= 2 {
+                player.missions.append(missions.removeFirst())
+                player.missions.append(missions.removeFirst())
+            }
+            
+            gamePlayers[i] = player
+        }
+        
+        // Set first player as active
         if !gamePlayers.isEmpty {
             gamePlayers[0].isActive = true
         }
@@ -47,7 +62,7 @@ class GameService: ObservableObject {
         // Send notification
         NotificationService.shared.sendNotification(
             title: "🚂 Game Started!",
-            body: "The train adventure begins!"
+            body: "The train adventure begins! Each player has 2 missions."
         )
     }
     
@@ -95,9 +110,15 @@ class GameService: ObservableObject {
         
         var player = game.players[playerIndex]
         
-        // Check mission limit
+        // Check if player has already used their action this turn
+        guard !player.hasUsedTurnAction else {
+            errorMessage = "You've already taken an action this turn! End your turn."
+            return
+        }
+        
+        // Check mission limit (players must maintain exactly 2 missions)
         guard player.missions.count < 2 else {
-            errorMessage = "Mission limit reached! Maximum 2 missions."
+            errorMessage = "You already have 2 missions! Complete or discard one first."
             return
         }
         
@@ -107,9 +128,10 @@ class GameService: ObservableObject {
             return
         }
         
-        // Draw mission
+        // Draw mission (costs 1 turn action)
         let mission = game.missionDeck.removeFirst()
         player.missions.append(mission)
+        player.hasUsedTurnAction = true  // Mark action as used
         
         game.players[playerIndex] = player
         currentGame = game
