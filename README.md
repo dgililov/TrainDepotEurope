@@ -7,7 +7,10 @@ Train Depot Europe is a feature-rich iOS game based on the popular board game Ti
 ![iOS](https://img.shields.io/badge/iOS-13.0%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.0%2B-orange)
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-Framework-green)
+![Version](https://img.shields.io/badge/Version-1.3.0-brightgreen)
 ![License](https://img.shields.io/badge/License-Educational-lightgrey)
+
+> 📋 **[View Release Notes](RELEASE_NOTES.md)** for detailed version history and updates
 
 ---
 
@@ -28,17 +31,21 @@ Train Depot Europe is a feature-rich iOS game based on the popular board game Ti
 
 ### Visuals & Audio
 - ✅ **Interactive Map** - Pinch to zoom, drag to pan
+- ✅ **Expandable Map View** - Three view modes: collapsed, expanded, full-screen
+- ✅ **Constant-Size Icons** - Labels stay readable at all zoom levels
 - ✅ **Train Animations** - Watch trains travel along routes
 - ✅ **12 Animal Characters** - Choose your player avatar
 - ✅ **Background Music** - Licensed music by Kevin MacLeod
 - ✅ **Sound Effects** - Card draw, railroad build, mission complete
 
 ### User Experience
-- ✅ **Beautiful UI** - Gradient backgrounds, smooth animations
+- ✅ **Beautiful UI** - Redesigned following Apple HIG standards
+- ✅ **Gesture Controls** - Swipe to expand map, drag to pan
+- ✅ **Game Persistence** - Auto-save with resume game feature
 - ✅ **No Account Required** - Simple name entry to play
 - ✅ **Local Notifications** - Stay informed about game events
+- ✅ **Portrait & Landscape** - Full device rotation support
 - ✅ **Graceful Fallbacks** - Works without media assets
-- ✅ **Portrait & Landscape** - Supports all orientations
 
 ---
 
