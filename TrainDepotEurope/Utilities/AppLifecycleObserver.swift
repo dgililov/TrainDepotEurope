@@ -42,6 +42,14 @@ class AppLifecycleObserver: ObservableObject {
     }
     
     private func handleAppEnteringBackground() {
+        print("🌙 App entering background")
+        
+        // Save game state if in progress
+        if let game = GameService.shared.currentGame, game.gameStatus == .inProgress {
+            GamePersistenceService.shared.saveGame(game)
+            print("💾 Game saved on background")
+        }
+        
         // Pause music
         AudioService.shared.pauseMusic()
         
@@ -52,11 +60,21 @@ class AppLifecycleObserver: ObservableObject {
     }
     
     private func handleAppEnteringForeground() {
+        print("☀️ App entering foreground")
+        
         // Resume music
         AudioService.shared.resumeMusic()
     }
     
     private func handleAppTermination() {
+        print("💤 App terminating")
+        
+        // Final save before termination
+        if let game = GameService.shared.currentGame, game.gameStatus == .inProgress {
+            GamePersistenceService.shared.saveGame(game)
+            print("💾 Final game save on termination")
+        }
+        
         // Cleanup animations
         TrainAnimationService.shared.cleanupAnimations()
         

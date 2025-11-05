@@ -11,10 +11,42 @@ import Combine
 class GameService: ObservableObject {
     static let shared = GameService()
     
-    @Published var currentGame: Game?
+    @Published var currentGame: Game? {
+        didSet {
+            // Auto-save when game changes (but not on every property change)
+            if let game = currentGame, game.gameStatus == .inProgress {
+                // Debounce saves to avoid too frequent writes
+                saveDebounceTimer?.invalidate()
+                saveDebounceTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] _ in
+                    self?.saveCurrentGame()
+                }
+            } else if currentGame?.gameStatus == .finished {
+                // Delete save when game finishes
+                GamePersistenceService.shared.deleteSavedGame()
+            }
+        }
+    }
     @Published var errorMessage: String?
     
+    private var saveDebounceTimer: Timer?
+    
     private init() {}
+    
+    // MARK: - Save/Load
+    
+    private func saveCurrentGame() {
+        guard let game = currentGame else { return }
+        GamePersistenceService.shared.saveGame(game)
+    }
+    
+    func loadSavedGame() {
+        if let savedGame = GamePersistenceService.shared.loadGame() {
+            currentGame = savedGame
+            print("✅ Loaded saved game with \(savedGame.players.count) players")
+        }
+    }
+    
+    // MARK: - Game Management
     
     func initializeGame(players: [Player]) {
         let cities = MapDataService.shared.getAllCities()

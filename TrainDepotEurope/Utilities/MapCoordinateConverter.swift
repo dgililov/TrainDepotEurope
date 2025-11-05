@@ -16,12 +16,46 @@ struct MapCoordinateConverter {
     static let minLongitude = -25.0
     static let maxLongitude = 60.0
     
+    // Calibration offsets (can be adjusted for better alignment)
+    static var offsetX: CGFloat {
+        UserDefaults.standard.object(forKey: "mapOffsetX") as? CGFloat ?? 0.0
+    }
+    
+    static var offsetY: CGFloat {
+        UserDefaults.standard.object(forKey: "mapOffsetY") as? CGFloat ?? 0.0
+    }
+    
+    static var scale: CGFloat {
+        UserDefaults.standard.object(forKey: "mapScale") as? CGFloat ?? 1.0
+    }
+    
     /// Convert latitude/longitude to pixel coordinates on the map
     static func latLonToPixel(latitude: Double, longitude: Double) -> CGPoint {
+        // Base conversion
         let x = (longitude - minLongitude) / (maxLongitude - minLongitude) * Double(mapWidth)
         let y = (maxLatitude - latitude) / (maxLatitude - minLatitude) * Double(mapHeight)
         
-        return CGPoint(x: x, y: y)
+        // Apply calibration
+        let calibratedX = x * Double(scale) + Double(offsetX)
+        let calibratedY = y * Double(scale) + Double(offsetY)
+        
+        return CGPoint(x: calibratedX, y: calibratedY)
+    }
+    
+    /// Save calibration settings
+    static func saveCalibration(offsetX: CGFloat, offsetY: CGFloat, scale: CGFloat = 1.0) {
+        UserDefaults.standard.set(offsetX, forKey: "mapOffsetX")
+        UserDefaults.standard.set(offsetY, forKey: "mapOffsetY")
+        UserDefaults.standard.set(scale, forKey: "mapScale")
+        print("✅ Map calibration saved: offsetX=\(offsetX), offsetY=\(offsetY), scale=\(scale)")
+    }
+    
+    /// Reset calibration to defaults
+    static func resetCalibration() {
+        UserDefaults.standard.removeObject(forKey: "mapOffsetX")
+        UserDefaults.standard.removeObject(forKey: "mapOffsetY")
+        UserDefaults.standard.removeObject(forKey: "mapScale")
+        print("🔄 Map calibration reset")
     }
     
     /// Convert pixel coordinates to latitude/longitude

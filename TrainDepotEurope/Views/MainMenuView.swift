@@ -11,8 +11,15 @@ import SwiftUI
 struct MainMenuView: View {
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var queueService: QueueService
+    @EnvironmentObject var gameService: GameService
     @State private var showingAnimalSelection = false
     @State private var showingSettings = false
+    @State private var showingResumeAlert = false
+    @State private var navigateToGame = false
+    
+    var hasSavedGame: Bool {
+        GamePersistenceService.shared.hasSavedGame()
+    }
     
     var body: some View {
         NavigationView {
@@ -47,6 +54,20 @@ struct MainMenuView: View {
                         
                         // Menu cards
                         VStack(spacing: 16) {
+                            // Resume Game (if available)
+                            if hasSavedGame {
+                                Button(action: {
+                                    showingResumeAlert = true
+                                }) {
+                                    MenuCard(
+                                        icon: "play.circle.fill",
+                                        title: "Resume Game",
+                                        subtitle: "Continue your game",
+                                        color: Color.blue
+                                    )
+                                }
+                            }
+                            
                             // Join Game (Multiplayer)
                             NavigationLink(destination: AnimalSelectionView()) {
                                 MenuCard(
@@ -117,8 +138,49 @@ struct MainMenuView: View {
                 }
             }
             .navigationBarHidden(true)
+            
+            // Navigation to resumed game
+            NavigationLink(
+                destination: GameBoardView(),
+                isActive: $navigateToGame
+            ) {
+                EmptyView()
+            }
+            .hidden()
         }
         .navigationViewStyle(StackNavigationViewStyle())
+        .alert("Resume Game", isPresented: $showingResumeAlert) {
+            Button("Resume") {
+                resumeGame()
+            }
+            Button("New Game") {
+                deleteAndStartNew()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            if let info = GamePersistenceService.shared.getSaveInfo() {
+                Text("Continue your game with \(info.playerCount) players?\nLast saved: \(formatDate(info.date))")
+            } else {
+                Text("Continue your saved game?")
+            }
+        }
+    }
+    
+    private func resumeGame() {
+        gameService.loadSavedGame()
+        navigateToGame = true
+        AudioService.shared.playSound(.buttonTap)
+    }
+    
+    private func deleteAndStartNew() {
+        GamePersistenceService.shared.deleteSavedGame()
+        AudioService.shared.playSound(.buttonTap)
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
     
     private func signOut() {

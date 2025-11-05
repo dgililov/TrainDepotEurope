@@ -4,6 +4,18 @@
 <dict>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>We need notification permissions to alert you about game events and turn changes.</string>
+	<key>GKGameCenterIdentifier</key>
+	<string>com.dgililov.TrainDepotEurope</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>gamekit</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 </dict>
 </plist>
 

@@ -40,12 +40,13 @@ struct MapView: View {
                     RailroadLine(railroad: railroad, cities: game.cities, players: game.players, geometry: geometry)
                 }
                 
-                // City pins
+                // City pins (keep constant size regardless of zoom)
                 ForEach(game.cities) { city in
                     CityPin(
                         city: city,
                         isSelected: selectedCity?.id == city.id,
                         geometry: geometry,
+                        currentScale: scale,
                         onTap: {
                             selectedCity = city
                         }
@@ -86,6 +87,7 @@ struct CityPin: View {
     let city: City
     let isSelected: Bool
     let geometry: GeometryProxy
+    let currentScale: CGFloat
     let onTap: () -> Void
     
     var position: CGPoint {
@@ -98,6 +100,11 @@ struct CityPin: View {
         let scaleY = geometry.size.height / MapCoordinateConverter.mapHeight
         
         return CGPoint(x: pixel.x * scaleX, y: pixel.y * scaleY)
+    }
+    
+    // Inverse scale factor to keep constant size
+    var inverseScale: CGFloat {
+        1.0 / currentScale
     }
     
     // Dynamic font sizes based on selection
@@ -141,6 +148,7 @@ struct CityPin: View {
                 .shadow(radius: isSelected ? 3 : 1)
                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
         }
+        .scaleEffect(inverseScale)  // Apply inverse scale to keep constant size
         .position(position)
         .onTapGesture {
             onTap()
