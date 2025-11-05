@@ -134,6 +134,11 @@ class GameService: ObservableObject {
         AudioService.shared.playSound(.cardDraw)
         
         errorMessage = nil
+        
+        // Auto-end turn after drawing a card
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.endTurn()
+        }
     }
     
     func drawMission(playerId: UUID) {
@@ -172,6 +177,11 @@ class GameService: ObservableObject {
         AudioService.shared.playSound(.cardDraw)
         
         errorMessage = nil
+        
+        // Auto-end turn after drawing a mission
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.endTurn()
+        }
     }
     
     func buildRailroad(playerId: UUID, railroadId: UUID) {
@@ -274,6 +284,11 @@ class GameService: ObservableObject {
         checkMissionCompletion(playerId: playerId)
         
         errorMessage = nil
+        
+        // Auto-end turn after building a railroad
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.endTurn()
+        }
     }
     
     func endTurn() {

@@ -37,7 +37,16 @@ struct MapView: View {
                 
                 // Railroad lines (draw first, behind cities)
                 ForEach(game.railroads) { railroad in
-                    RailroadLine(railroad: railroad, cities: game.cities, players: game.players, geometry: geometry)
+                    RailroadLine(
+                        railroad: railroad,
+                        cities: game.cities,
+                        players: game.players,
+                        geometry: geometry,
+                        currentScale: scale,
+                        onTap: {
+                            handleRailroadTap(railroad)
+                        }
+                    )
                 }
                 
                 // City pins (keep constant size regardless of zoom)
@@ -79,6 +88,20 @@ struct MapView: View {
                         lastOffset = offset
                     }
             )
+        }
+    }
+    
+    // Handle railroad indicator tap
+    private func handleRailroadTap(_ railroad: Railroad) {
+        guard let fromCity = game.cities.first(where: { $0.id == railroad.fromCity }),
+              let toCity = game.cities.first(where: { $0.id == railroad.toCity }) else { return }
+        
+        // Select both cities to build this railroad
+        selectedCity = fromCity
+        
+        // Small delay then select the destination
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            selectedCity = toCity
         }
     }
 }
@@ -161,6 +184,13 @@ struct RailroadLine: View {
     let cities: [City]
     let players: [Player]
     let geometry: GeometryProxy
+    let currentScale: CGFloat
+    let onTap: () -> Void
+    
+    // Inverse scale factor to keep constant size
+    var inverseScale: CGFloat {
+        1.0 / currentScale
+    }
     
     var fromCity: City? {
         cities.first { $0.id == railroad.fromCity }
@@ -230,29 +260,41 @@ struct RailroadLine: View {
                     .padding(4)
                     .background(owner.selectedAnimal.color.opacity(0.8))
                     .cornerRadius(8)
+                    .scaleEffect(inverseScale)  // Keep constant size
                     .position(
                         x: (startPosition.x + endPosition.x) / 2,
                         y: (startPosition.y + endPosition.y) / 2
                     )
             }
             
-            // Show distance/slots requirement
+            // Show distance/slots requirement (tappable if unclaimed)
             if railroad.owner == nil {
-                VStack(spacing: 0) {
-                    Text("\(railroad.distance)")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    if let color = railroad.requiredColor {
-                        Circle()
-                            .fill(color.color)
-                            .frame(width: 12, height: 12)
-                            .overlay(Circle().stroke(Color.white, lineWidth: 1))
+                Button(action: onTap) {
+                    VStack(spacing: 2) {
+                        Text("\(railroad.distance)")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        if let color = railroad.requiredColor {
+                            Circle()
+                                .fill(color.color)
+                                .frame(width: 14, height: 14)
+                                .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
+                        }
                     }
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.black.opacity(0.75))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(lineColor, lineWidth: 2)
+                            )
+                    )
+                    .shadow(color: Color.black.opacity(0.3), radius: 3)
                 }
-                .padding(6)
-                .background(Color.black.opacity(0.7))
-                .cornerRadius(8)
+                .buttonStyle(PlainButtonStyle())
+                .scaleEffect(inverseScale)  // Keep constant size when zooming
                 .position(
                     x: (startPosition.x + endPosition.x) / 2,
                     y: (startPosition.y + endPosition.y) / 2

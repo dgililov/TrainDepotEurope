@@ -28,24 +28,38 @@ class CPUPlayerService {
         guard let game = GameService.shared.currentGame else { return }
         guard let currentPlayer = game.currentPlayer else { return }
         
+        print("🤖 CPU Player '\(currentPlayer.username)' is taking turn...")
+        
         // Strategy:
-        // 1. Try to build a railroad if possible
-        // 2. If no mission, draw a mission
+        // 1. If missing missions, draw a mission (70% chance if < 2 missions)
+        // 2. Try to build a railroad if possible (has cards)
         // 3. Otherwise, draw a card
         
+        // Check if we should draw a mission
+        if currentPlayer.missions.count < 2 && !game.missionDeck.isEmpty {
+            let shouldDrawMission = Double.random(in: 0...1) < 0.7
+            if shouldDrawMission {
+                print("🤖 CPU drawing mission card...")
+                GameService.shared.drawMission(playerId: currentPlayer.id)
+                // Turn will auto-end after drawing
+                return
+            }
+        }
+        
+        // Try to build a railroad
         if tryBuildRailroad(player: currentPlayer) {
-            // Successfully built railroad
+            print("🤖 CPU built a railroad!")
+            // Turn will auto-end after building
             return
         }
         
-        if currentPlayer.missions.count < 2 && !game.missionDeck.isEmpty {
-            GameService.shared.drawMission(playerId: currentPlayer.id)
-        } else if currentPlayer.hand.count < 6 && !game.cardDeck.isEmpty {
+        // Default: draw a card if able
+        if currentPlayer.hand.count < 6 && !game.cardDeck.isEmpty {
+            print("🤖 CPU drawing a card...")
             GameService.shared.drawCard(playerId: currentPlayer.id)
-        }
-        
-        // End turn after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Turn will auto-end after drawing
+        } else {
+            print("🤖 CPU cannot perform any action, ending turn...")
             GameService.shared.endTurn()
         }
     }
