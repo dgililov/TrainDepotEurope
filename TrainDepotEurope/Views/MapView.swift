@@ -21,26 +21,35 @@ struct MapView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Map background
-                Rectangle()
-                    .fill(Color.blue.opacity(0.1))
-                
-                // Real Europe map image
+                // Real Europe map image as background
                 if let image = loadMapImage() {
                     Image(uiImage: image)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: mapSize.width * scale, height: mapSize.height * scale)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
                 } else {
-                    // Fallback: blue background
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.3), Color.blue.opacity(0.1)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
+                    // Fallback: blue background with warning
+                    VStack(spacing: 16) {
+                        Image(systemName: "map.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.blue.opacity(0.5))
+                        
+                        Text("Map Image Not Found")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("Please add europe_map.jpg to Assets")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.blue.opacity(0.3), Color.blue.opacity(0.1)],
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
+                    )
                 }
                 
                 // Railroad lines (draw first, behind cities)
@@ -101,39 +110,44 @@ struct MapView: View {
     
     // Load the Europe map image
     private func loadMapImage() -> UIImage? {
-        // Try multiple paths to find the map image
-        let possiblePaths = [
-            "Assets/Images/Maps/europe_map",
-            "europe_map",
-            "Assets/europe_map_generated"
-        ]
-        
-        for path in possiblePaths {
-            if let image = UIImage(named: path) {
-                print("✅ Loaded map image from: \(path)")
-                return image
-            }
-            // Try with jpg extension
-            if let image = UIImage(named: "\(path).jpg") {
-                print("✅ Loaded map image from: \(path).jpg")
-                return image
-            }
-            // Try with png extension
-            if let image = UIImage(named: "\(path).png") {
-                print("✅ Loaded map image from: \(path).png")
-                return image
-            }
-        }
-        
-        // Try loading from file path directly
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let imagePath = documentsPath.appendingPathComponent("Assets/Images/Maps/europe_map.jpg")
-        if let image = UIImage(contentsOfFile: imagePath.path) {
-            print("✅ Loaded map image from file path")
+        // Try loading from Asset Catalog (most common in iOS)
+        // Asset name should be just "europe_map" without extension when in Asset Catalog
+        if let image = UIImage(named: "europe_map") {
+            print("✅ Loaded map image: europe_map from Asset Catalog")
             return image
         }
         
-        print("⚠️ Map image not found, using fallback")
+        // Try with common naming variations
+        let possibleNames = [
+            "europe_map.jpg",
+            "Assets/Images/Maps/europe_map",
+            "Maps/europe_map",
+            "europe_map_generated"
+        ]
+        
+        for name in possibleNames {
+            if let image = UIImage(named: name) {
+                print("✅ Loaded map image: \(name)")
+                return image
+            }
+        }
+        
+        // Try loading directly from bundle
+        if let path = Bundle.main.path(forResource: "europe_map", ofType: "jpg"),
+           let image = UIImage(contentsOfFile: path) {
+            print("✅ Loaded map image from bundle path")
+            return image
+        }
+        
+        // Try from Assets subfolder in bundle
+        if let path = Bundle.main.path(forResource: "Assets/Images/Maps/europe_map", ofType: "jpg"),
+           let image = UIImage(contentsOfFile: path) {
+            print("✅ Loaded map image from Assets bundle path")
+            return image
+        }
+        
+        print("⚠️ Map image 'europe_map.jpg' not found in Asset Catalog or Bundle")
+        print("💡 Add the image to Xcode: Right-click project > Add Files > Select europe_map.jpg")
         return nil
     }
     

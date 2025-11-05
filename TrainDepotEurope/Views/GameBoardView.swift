@@ -18,6 +18,7 @@ enum MapViewMode {
 struct GameBoardView: View {
     @EnvironmentObject var gameService: GameService
     @EnvironmentObject var trainAnimationService: TrainAnimationService
+    @Environment(\.presentationMode) var presentationMode
     
     @State private var selectedCity: City?
     @State private var firstSelectedCity: City?
@@ -26,6 +27,7 @@ struct GameBoardView: View {
     @State private var mapViewMode: MapViewMode = .collapsed
     @State private var drawerOffset: CGFloat = 0
     @State private var lastDrawerOffset: CGFloat = 0
+    @State private var showExitConfirmation = false
     
     var currentPlayer: Player? {
         gameService.currentGame?.currentPlayer
@@ -150,6 +152,14 @@ struct GameBoardView: View {
                     showVictory = true
                 }
             }
+            .alert("Exit Game?", isPresented: $showExitConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Exit to Main Menu", role: .destructive) {
+                    exitToMainMenu()
+                }
+            } message: {
+                Text("Your current game progress will be saved. You can resume later from the main menu.")
+            }
         }
     }
     
@@ -203,6 +213,18 @@ struct GameBoardView: View {
     
     func headerView(in geometry: GeometryProxy) -> some View {
         HStack(spacing: 16) {
+            // Exit button (Return to Main Menu)
+            Button(action: {
+                showExitConfirmation = true
+            }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.red)
+                    .frame(width: 44, height: 44)
+                    .background(Color.red.opacity(0.1))
+                    .clipShape(Circle())
+            }
+            
             // Current player badge
             if let player = currentPlayer {
                 HStack(spacing: 10) {
@@ -425,6 +447,11 @@ struct GameBoardView: View {
         gameService.endTurn()
         firstSelectedCity = nil
         selectedCity = nil
+    }
+    
+    private func exitToMainMenu() {
+        // Game is auto-saved by GameService, so just dismiss
+        presentationMode.wrappedValue.dismiss()
     }
 }
 

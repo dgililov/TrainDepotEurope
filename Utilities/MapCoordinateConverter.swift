@@ -9,12 +9,15 @@ import CoreGraphics
 import Foundation
 
 struct MapCoordinateConverter {
-    static let mapWidth: CGFloat = 1000.0
-    static let mapHeight: CGFloat = 811.0
-    static let minLatitude = 30.0
-    static let maxLatitude = 72.0
-    static let minLongitude = -25.0
-    static let maxLongitude = 60.0
+    // europe_map.jpg actual dimensions
+    static let mapWidth: CGFloat = 811.0
+    static let mapHeight: CGFloat = 1005.0
+    
+    // Geographic bounds covering Europe (matching the map image)
+    static let minLatitude = 35.0   // Southern Europe (Athens area)
+    static let maxLatitude = 65.0   // Northern Europe (Helsinki area)
+    static let minLongitude = -10.0 // Western Europe (Madrid area)
+    static let maxLongitude = 45.0  // Eastern Europe (Moscow area)
     
     /// Convert latitude/longitude to pixel coordinates on the map
     static func latLonToPixel(latitude: Double, longitude: Double) -> CGPoint {
