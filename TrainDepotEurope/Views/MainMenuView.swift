@@ -47,7 +47,7 @@ struct MainMenuView: View {
                         
                         // Menu cards
                         VStack(spacing: 16) {
-                            // Join Game
+                            // Join Game (Multiplayer)
                             NavigationLink(destination: AnimalSelectionView()) {
                                 MenuCard(
                                     icon: "person.2.fill",
@@ -57,10 +57,10 @@ struct MainMenuView: View {
                                 )
                             }
                             
-                            // Solo Play
-                            NavigationLink(destination: AnimalSelectionView()) {
+                            // Solo Play (vs CPU)
+                            NavigationLink(destination: SoloSetupView()) {
                                 MenuCard(
-                                    icon: "person.fill",
+                                    icon: "cpu",
                                     title: "Solo Play",
                                     subtitle: "Play against CPU",
                                     color: Color.orange

@@ -12,6 +12,7 @@ struct LobbyView: View {
     @EnvironmentObject var queueService: QueueService
     @EnvironmentObject var authService: AuthenticationService
     @EnvironmentObject var gameService: GameService
+    @Environment(\.presentationMode) var presentationMode
     @State private var navigateToGame = false
     @State private var showingLeaveAlert = false
     
@@ -170,6 +171,9 @@ struct LobbyView: View {
             queueService.removePlayer(userId: player.id)
         }
         AudioService.shared.playSound(.buttonTap)
+        
+        // Navigate back to main menu
+        presentationMode.wrappedValue.dismiss()
     }
 }
 

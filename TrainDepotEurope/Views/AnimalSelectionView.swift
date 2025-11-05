@@ -11,6 +11,7 @@ import SwiftUI
 struct AnimalSelectionView: View {
     @EnvironmentObject var queueService: QueueService
     @EnvironmentObject var authService: AuthenticationService
+    @Environment(\.presentationMode) var presentationMode
     @State private var selectedAnimal: AnimalCharacter = .bear
     @State private var navigateToLobby = false
     
