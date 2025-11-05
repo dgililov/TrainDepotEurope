@@ -13,16 +13,33 @@ struct MapCoordinateConverter {
     static let mapWidth: CGFloat = 811.0
     static let mapHeight: CGFloat = 1005.0
     
-    // Geographic bounds covering Europe (matching the map image)
-    static let minLatitude = 35.0   // Southern Europe (Athens area)
-    static let maxLatitude = 65.0   // Northern Europe (Helsinki area)
-    static let minLongitude = -10.0 // Western Europe (Madrid area)
-    static let maxLongitude = 45.0  // Eastern Europe (Moscow area)
+    // CALIBRATED Geographic bounds for europe_map.jpg
+    // These bounds are adjusted to match the actual map image projection
+    // After testing: Cities were appearing too far south, adjusted bounds accordingly
+    static let minLatitude = 34.0   // Southern boundary (includes southern Greece, Cyprus area)
+    static let maxLatitude = 71.5   // Northern boundary (includes northern Scandinavia)
+    static let minLongitude = -11.0 // Western boundary (includes Portugal, Ireland)
+    static let maxLongitude = 42.0  // Eastern boundary (includes Moscow)
+    
+    // Fine-tuning offsets for perfect alignment
+    private static let latitudeOffset = 0.0  // Adjust if cities shift north/south
+    private static let longitudeOffset = 0.0 // Adjust if cities shift east/west
+    private static let latitudeScale = 1.0   // Adjust if north-south compression/expansion
+    private static let longitudeScale = 1.0  // Adjust if east-west compression/expansion
     
     /// Convert latitude/longitude to pixel coordinates on the map
     static func latLonToPixel(latitude: Double, longitude: Double) -> CGPoint {
-        let x = (longitude - minLongitude) / (maxLongitude - minLongitude) * Double(mapWidth)
-        let y = (maxLatitude - latitude) / (maxLatitude - minLatitude) * Double(mapHeight)
+        // Apply calibration
+        let adjustedLat = latitude + latitudeOffset
+        let adjustedLon = longitude + longitudeOffset
+        
+        // Convert to normalized coordinates (0.0 to 1.0)
+        let normalizedX = (adjustedLon - minLongitude) / (maxLongitude - minLongitude) * longitudeScale
+        let normalizedY = (maxLatitude - adjustedLat) / (maxLatitude - minLatitude) * latitudeScale
+        
+        // Convert to pixel coordinates
+        let x = normalizedX * Double(mapWidth)
+        let y = normalizedY * Double(mapHeight)
         
         return CGPoint(x: x, y: y)
     }

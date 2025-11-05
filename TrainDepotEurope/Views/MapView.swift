@@ -28,11 +28,11 @@ struct MapView: View {
                 
                 // Real Europe map image as background
                 if let image = loadedImage {
+                    // Use .fit to show entire map without cropping
                     Image(uiImage: image)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .clipped()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     // Fallback: blue background with warning
                     VStack(spacing: 16) {
@@ -203,10 +203,34 @@ struct CityPin: View {
             longitude: city.coordinates.longitude
         )
         
-        let scaleX = geometry.size.width / MapCoordinateConverter.mapWidth
-        let scaleY = geometry.size.height / MapCoordinateConverter.mapHeight
+        // Calculate the actual displayed map size (accounting for .fit aspect ratio)
+        let mapAspectRatio = MapCoordinateConverter.mapWidth / MapCoordinateConverter.mapHeight
+        let screenAspectRatio = geometry.size.width / geometry.size.height
         
-        return CGPoint(x: pixel.x * scaleX, y: pixel.y * scaleY)
+        var displayWidth: CGFloat
+        var displayHeight: CGFloat
+        var offsetX: CGFloat = 0
+        var offsetY: CGFloat = 0
+        
+        if screenAspectRatio > mapAspectRatio {
+            // Screen is wider than map - map fits height, letterbox left/right
+            displayHeight = geometry.size.height
+            displayWidth = displayHeight * mapAspectRatio
+            offsetX = (geometry.size.width - displayWidth) / 2
+        } else {
+            // Screen is taller than map - map fits width, letterbox top/bottom
+            displayWidth = geometry.size.width
+            displayHeight = displayWidth / mapAspectRatio
+            offsetY = (geometry.size.height - displayHeight) / 2
+        }
+        
+        let scaleX = displayWidth / MapCoordinateConverter.mapWidth
+        let scaleY = displayHeight / MapCoordinateConverter.mapHeight
+        
+        return CGPoint(
+            x: pixel.x * scaleX + offsetX,
+            y: pixel.y * scaleY + offsetY
+        )
     }
     
     // Inverse scale factor to keep constant size
@@ -289,6 +313,29 @@ struct RailroadLine: View {
         return players.first { $0.id == ownerId }
     }
     
+    // Helper to calculate display dimensions
+    private var displayMetrics: (width: CGFloat, height: CGFloat, offsetX: CGFloat, offsetY: CGFloat) {
+        let mapAspectRatio = MapCoordinateConverter.mapWidth / MapCoordinateConverter.mapHeight
+        let screenAspectRatio = geometry.size.width / geometry.size.height
+        
+        var displayWidth: CGFloat
+        var displayHeight: CGFloat
+        var offsetX: CGFloat = 0
+        var offsetY: CGFloat = 0
+        
+        if screenAspectRatio > mapAspectRatio {
+            displayHeight = geometry.size.height
+            displayWidth = displayHeight * mapAspectRatio
+            offsetX = (geometry.size.width - displayWidth) / 2
+        } else {
+            displayWidth = geometry.size.width
+            displayHeight = displayWidth / mapAspectRatio
+            offsetY = (geometry.size.height - displayHeight) / 2
+        }
+        
+        return (displayWidth, displayHeight, offsetX, offsetY)
+    }
+    
     var startPosition: CGPoint {
         guard let city = fromCity else { return .zero }
         let pixel = MapCoordinateConverter.latLonToPixel(
@@ -296,10 +343,14 @@ struct RailroadLine: View {
             longitude: city.coordinates.longitude
         )
         
-        let scaleX = geometry.size.width / MapCoordinateConverter.mapWidth
-        let scaleY = geometry.size.height / MapCoordinateConverter.mapHeight
+        let metrics = displayMetrics
+        let scaleX = metrics.width / MapCoordinateConverter.mapWidth
+        let scaleY = metrics.height / MapCoordinateConverter.mapHeight
         
-        return CGPoint(x: pixel.x * scaleX, y: pixel.y * scaleY)
+        return CGPoint(
+            x: pixel.x * scaleX + metrics.offsetX,
+            y: pixel.y * scaleY + metrics.offsetY
+        )
     }
     
     var endPosition: CGPoint {
@@ -309,10 +360,14 @@ struct RailroadLine: View {
             longitude: city.coordinates.longitude
         )
         
-        let scaleX = geometry.size.width / MapCoordinateConverter.mapWidth
-        let scaleY = geometry.size.height / MapCoordinateConverter.mapHeight
+        let metrics = displayMetrics
+        let scaleX = metrics.width / MapCoordinateConverter.mapWidth
+        let scaleY = metrics.height / MapCoordinateConverter.mapHeight
         
-        return CGPoint(x: pixel.x * scaleX, y: pixel.y * scaleY)
+        return CGPoint(
+            x: pixel.x * scaleX + metrics.offsetX,
+            y: pixel.y * scaleY + metrics.offsetY
+        )
     }
     
     var lineColor: Color {
