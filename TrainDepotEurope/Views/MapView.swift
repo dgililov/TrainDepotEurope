@@ -25,14 +25,22 @@ struct MapView: View {
                 Rectangle()
                     .fill(Color.blue.opacity(0.1))
                 
-                // Map image (if available)
-                if let image = UIImage(named: "europe_map") {
+                // Real Europe map image
+                if let image = loadMapImage() {
                     Image(uiImage: image)
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: mapSize.width * scale, height: mapSize.height * scale)
                 } else {
-                    // Fallback: simple background
-                    Color.blue.opacity(0.2)
+                    // Fallback: blue background
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.3), Color.blue.opacity(0.1)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 }
                 
                 // Railroad lines (draw first, behind cities)
@@ -89,6 +97,44 @@ struct MapView: View {
                     }
             )
         }
+    }
+    
+    // Load the Europe map image
+    private func loadMapImage() -> UIImage? {
+        // Try multiple paths to find the map image
+        let possiblePaths = [
+            "Assets/Images/Maps/europe_map",
+            "europe_map",
+            "Assets/europe_map_generated"
+        ]
+        
+        for path in possiblePaths {
+            if let image = UIImage(named: path) {
+                print("✅ Loaded map image from: \(path)")
+                return image
+            }
+            // Try with jpg extension
+            if let image = UIImage(named: "\(path).jpg") {
+                print("✅ Loaded map image from: \(path).jpg")
+                return image
+            }
+            // Try with png extension
+            if let image = UIImage(named: "\(path).png") {
+                print("✅ Loaded map image from: \(path).png")
+                return image
+            }
+        }
+        
+        // Try loading from file path directly
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let imagePath = documentsPath.appendingPathComponent("Assets/Images/Maps/europe_map.jpg")
+        if let image = UIImage(contentsOfFile: imagePath.path) {
+            print("✅ Loaded map image from file path")
+            return image
+        }
+        
+        print("⚠️ Map image not found, using fallback")
+        return nil
     }
     
     // Handle railroad indicator tap
