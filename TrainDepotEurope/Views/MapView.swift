@@ -12,21 +12,27 @@ struct MapView: View {
     @Binding var selectedCity: City?
     @EnvironmentObject var trainAnimationService: TrainAnimationService
     
-    @State private var scale: CGFloat = 3.5  // Start zoomed in for 10mm spacing
+    @State private var scale: CGFloat = 1.0  // Start at 1x to see full map
     @State private var offset: CGSize = .zero
     @State private var lastOffset: CGSize = .zero
+    @State private var loadedImage: UIImage?
     
     let mapSize = CGSize(width: MapCoordinateConverter.mapWidth, height: MapCoordinateConverter.mapHeight)
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
+                // Background color
+                Color.blue.opacity(0.05)
+                    .ignoresSafeArea()
+                
                 // Real Europe map image as background
-                if let image = loadMapImage() {
+                if let image = loadedImage {
                     Image(uiImage: image)
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .aspectRatio(contentMode: .fill)
                         .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
                 } else {
                     // Fallback: blue background with warning
                     VStack(spacing: 16) {
@@ -38,9 +44,18 @@ struct MapView: View {
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
-                        Text("Please add europe_map.jpg to Assets")
+                        Text("Loading from: /Users/user01/Train Depot Europe/TrainDepotEurope/Assets/Images/Maps/europe_map.jpg")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                        
+                        Text("Tap to retry loading")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                            .onTapGesture {
+                                loadedImage = loadMapImage()
+                            }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(
@@ -90,7 +105,7 @@ struct MapView: View {
             .gesture(
                 MagnificationGesture()
                     .onChanged { value in
-                        scale = min(max(value * 3.5, 1.0), 6.0)  // Allow 1.0x to 6x zoom
+                        scale = min(max(value, 1.0), 6.0)  // Allow 1.0x to 6x zoom
                     }
             )
             .simultaneousGesture(
@@ -105,49 +120,58 @@ struct MapView: View {
                         lastOffset = offset
                     }
             )
+            .onAppear {
+                // Load map image when view appears
+                loadedImage = loadMapImage()
+                print("MapView appeared, attempting to load map image...")
+            }
         }
     }
     
     // Load the Europe map image
     private func loadMapImage() -> UIImage? {
-        // Try loading from Asset Catalog (most common in iOS)
-        // Asset name should be just "europe_map" without extension when in Asset Catalog
+        // Try loading from Asset Catalog first
         if let image = UIImage(named: "europe_map") {
             print("✅ Loaded map image: europe_map from Asset Catalog")
             return image
         }
         
-        // Try with common naming variations
-        let possibleNames = [
-            "europe_map.jpg",
-            "Assets/Images/Maps/europe_map",
-            "Maps/europe_map",
-            "europe_map_generated"
-        ]
+        // Try from absolute path (development)
+        let absolutePath = "/Users/user01/Train Depot Europe/TrainDepotEurope/Assets/Images/Maps/europe_map.jpg"
+        if let image = UIImage(contentsOfFile: absolutePath) {
+            print("✅ Loaded map image from absolute path: \(absolutePath)")
+            return image
+        }
         
-        for name in possibleNames {
+        // Try from workspace relative path
+        if let workspacePath = Bundle.main.resourcePath?.replacingOccurrences(of: "TrainDepotEurope.app/Contents/Resources", with: ""),
+           let image = UIImage(contentsOfFile: workspacePath + "Assets/Images/Maps/europe_map.jpg") {
+            print("✅ Loaded map image from workspace path")
+            return image
+        }
+        
+        // Try loading from bundle
+        if let path = Bundle.main.path(forResource: "europe_map", ofType: "jpg"),
+           let image = UIImage(contentsOfFile: path) {
+            print("✅ Loaded map image from bundle: \(path)")
+            return image
+        }
+        
+        // Try common naming variations in Asset Catalog
+        let assetNames = ["europe_map.jpg", "europe_map", "Maps/europe_map", "Assets/Images/Maps/europe_map"]
+        for name in assetNames {
             if let image = UIImage(named: name) {
                 print("✅ Loaded map image: \(name)")
                 return image
             }
         }
         
-        // Try loading directly from bundle
-        if let path = Bundle.main.path(forResource: "europe_map", ofType: "jpg"),
-           let image = UIImage(contentsOfFile: path) {
-            print("✅ Loaded map image from bundle path")
-            return image
-        }
-        
-        // Try from Assets subfolder in bundle
-        if let path = Bundle.main.path(forResource: "Assets/Images/Maps/europe_map", ofType: "jpg"),
-           let image = UIImage(contentsOfFile: path) {
-            print("✅ Loaded map image from Assets bundle path")
-            return image
-        }
-        
-        print("⚠️ Map image 'europe_map.jpg' not found in Asset Catalog or Bundle")
-        print("💡 Add the image to Xcode: Right-click project > Add Files > Select europe_map.jpg")
+        print("⚠️ Map image 'europe_map.jpg' not found!")
+        print("💡 Tried paths:")
+        print("   - Asset Catalog: europe_map")
+        print("   - Absolute: \(absolutePath)")
+        print("   - Bundle: Bundle.main.path")
+        print("💡 Solution: Add to Xcode Asset Catalog or Bundle Resources")
         return nil
     }
     
